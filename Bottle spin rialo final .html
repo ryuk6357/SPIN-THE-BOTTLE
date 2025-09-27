@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rialo Spin Bottle - Truth or Dare</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            
+            /* Background remains the same as requested in the previous step */
+            background: url('page_background.jpeg') no-repeat center center fixed;
+            background-size: cover;
+            background-color: #FFFFFF; 
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+            position: relative;
+            z-index: 1;
+        }
+        .title {
+            color: white;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .game-area {
+            position: relative;
+            /* INCREASED SIZE to accommodate the larger bottle */
+            width: 450px; 
+            height: 450px;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.05); 
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(148, 0, 211, 0.3);
+            display: flex; 
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; 
+        }
+        .bottle-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        .bottle-container:active {
+            transform: scale(0.95);
+        }
+        .bottle-image {
+            /* INCREASED BOTTLE DIMENSIONS (approx 40% more than 180x270) */
+            /* New Size: 180px * 1.4 = 252px | 270px * 1.4 = 378px */
+            width: 400px; 
+            height: 400px;
+            object-fit: contain;
+            position: relative;
+            top: 50%;
+            left: 50%;
+            
+            /* FIXED SPINNING: Ensures it rotates only at its base without moving (no wobbling) */
+            transform-origin: 50% 85%; 
+            transform: translate(-50%, -50%) rotate(360deg); 
+            
+            /* REFINED TRANSITION: Changed cubic-bezier for a smoother, less jarring slowdown */
+            transition: transform 4s cubic-bezier(0.4, 0.1, 0.2, 1);
+            pointer-events: none;
+            user-select: none;
+            z-index: 1;
+        }
+
+        /* REMOVING CENTER LOGO CSS (kept for reference, but the element is removed below) 
+        .center-logo {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            z-index: 3; 
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        */
+
+        .label {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+            user-select: none;
+            z-index: 1; 
+        }
+        .label.truth-top { top: 10px; left: 50%; transform: translateX(-50%); color: #4CAF50; }
+        .label.dare-right { top: 50%; right: 10px; transform: translateY(-50%) rotate(90deg); color: #FF5722; }
+        .label.truth-bottom { bottom: 10px; left: 50%; transform: translateX(-50%); color: #4CAF50; }
+        .label.dare-left { top: 50%; left: 10px; transform: translateY(-50%) rotate(-90deg); color: #FF5722; }
+        
+        @media (max-width: 480px) {
+            .title {
+                font-size: 2em;
+                margin-bottom: 20px;
+            }
+            .game-area {
+                width: 380px; 
+                height: 380px;
+            }
+            .bottle-image {
+                /* Scaled down for mobile */
+                width: 200px;
+                height: 300px;
+            }
+            .label {
+                font-size: 1em;
+            }
+            .result-container {
+                max-width: 300px;
+                padding: 20px;
+            }
+        }
+        /* ... (rest of your CSS styles remain the same) ... */
+        .spin-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .spin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(0,0,0,0.4);
+        }
+        .spin-btn:active {
+            transform: translateY(0);
+        }
+        .spin-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result-container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin: 20px 0;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+        .result-container.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .result-type {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .truth { color: #4CAF50; }
+        .dare { color: #FF5722; }
+        .result-text {
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #333;
+        }
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .mode-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .mode-btn.active {
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            border-color: rgba(255,255,255,0.9);
+        }
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle-float 2s ease-out forwards;
+        }
+        @keyframes particle-float {
+            0% { transform: scale(1); opacity: 1;}
+            100% { transform: scale(0) translateY(-50px); opacity: 0;}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">🍾 Rialo Truth or Dare 🍾</h1>
+        <div class="mode-toggle">
+            <button class="mode-btn active" onclick="setMode('both')">Both</button>
+            <button class="mode-btn" onclick="setMode('truth')">Truth Only</button>
+            <button class="mode-btn" onclick="setMode('dare')">Dare Only</button>
+        </div>
+        <div class="game-area" id="gameArea"> 
+            
+            <div class="label truth-top">TRUTH</div>
+            <div class="label dare-right">DARE</div>
+            <div class="label truth-bottom">TRUTH</div>
+            <div class="label dare-left">DARE</div>
+
+            <div class="bottle-container" id="bottleContainer">
+                <img src="rialo_bottle.png" 
+                     alt="Spin Bottle"
+                     class="bottle-image"
+                     id="bottle"
+                     draggable="false" />
+            </div>
+            
+            </div>
+        <button class="spin-btn" id="spinBtn" onclick="spinBottle()">
+            🌟 SPIN AGAIN 🌟
+        </button>
+        <div class="result-container" id="resultContainer">
+            <div class="result-type" id="resultType"></div>
+            <div class="result-text" id="resultText"></div>
+        </div>
+    </div>
+    <script>
+        let currentMode = 'both';
+        let isSpinning = false;
+        // ... (truthQuestions and dareQuestions arrays remain the same) ...
+        const truthQuestions = [
+            "What's the one Rialo feature you believe is most undervalued right now?",
+            "What is the riskiest transaction you've performed on the Rialo DEX?",
+            "Do you believe the Rialo Token is currently overvalued, undervalued, or fairly priced?",
+            "What is the highest percentage loss you've ever taken on a single DeFi trade?",
+            "If you had the power, what is the first change you would implement on the Rialo platform?",
+            "Which other Web3 project do you view as Rialo's biggest competitor?",
+            "What's one piece of advice you'd give to a newcomer on the Rialo platform?",
+            "What is the biggest FUD (Fear, Uncertainty, Doubt) about Rialo that you've heard?",
+            "What is the longest you have staked a token on any platform?",
+            "What's the biggest FOMO (Fear of Missing Out) trade you ever regretted?",
+            "What is the most complicated part of the Rialo ecosystem you still don't fully grasp?",
+            "If you had $1,000 to invest, how much would you put into Rialo right now?",
+            "Have you ever tried to run a crypto node or validator?",
+            "What's the one feature Rialo is missing that would make you use it daily?",
+            "What is your personal price prediction for the Rialo token by year-end?",
+            "On a scale of 1-10, how likely are you to refer a friend to Rialo?",
+            "What is your go-to crypto snack or drink while trading?",
+            "Have you ever set a ridiculous buy/sell limit order that actually hit?",
+            "Have you ever accidentally sent tokens to the wrong address?",
+            "What is your crypto guilty pleasure (e.g., meme coin, specific chart pattern)?",
+            "What is the most amount of money you have spent on a single gas fee?",
+            "Have you ever lied about your bag size (holdings) to someone?",
+            "What is the silliest crypto-related purchase you've ever made?",
+            "What is your current real-life profession or field of study?",
+            "Who in this community do you secretly think is the most knowledgeable Rialo whale?"
+        ];
+        const dareQuestions = [
+            "Go to the Rialo DEX and initiate a swap transaction. Share the estimated gas fee.",
+            "Find the Rialo contract address and paste the first 5 characters of a recent transaction hash.",
+            "Change your social media bio for 1 hour to read: 'Rialo Degen 🚀.'",
+            "Tweet a positive original thought about Rialo's community (and share the link).",
+            "Explain the concept of Slippage in a 10-second voice note.",
+            "Go to the Rialo documentation and paste the title of the second section you find.",
+            "Use three emojis to describe your portfolio's performance today.",
+            "Temporarily change your profile picture to the Rialo Logo for 1 hour.",
+            "Open your wallet app on your phone and show the last token received.",
+            "Give an enthusiastic, 15-second sales pitch for Rialo in a silly accent.",
+            "Send a one-sentence, positive, non-project message to a random person in your contact list.",
+            "Find the total TVL (Total Value Locked) on the Rialo platform right now and share the number.",
+            "Draw the Rialo logo from memory in a digital tool and post the picture.",
+            "Write a two-line poem about the challenges of Impermanent Loss.",
+            "Send a message using only crypto acronyms (e.g., 'WAGMI, fren. LFG!') to the chat/group.",
+            "Spell out 'RI-A-LO' using common household objects and show it.",
+            "Do a 10-second celebratory dance like you just hit a new All-Time High.",
+            "Name three different Layer 1 blockchains without pausing for breath.",
+            "Find a piece of fresh fruit and take a picture of it next to your laptop.",
+            "Give a sincere compliment to the person who sits opposite you (virtually or in person).",
+            "Sing a short line from a song that includes the word 'bridge' or 'token.'",
+            "Explain the Blockchain Trilemema using only your hands.",
+            "Quickly name three different Rialo staking/farming pool names.",
+            "Post a message using only the alt-text feature in your next tweet/message.",
+            "For the next 5 minutes, end every message you send with: 'Keep building!'"
+        ];
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                const targetBtn = document.querySelector(`.mode-btn[onclick*="'${mode}'"]`);
+                if(targetBtn) targetBtn.classList.add('active');
+            }
+        }
+
+        function createParticles(x, y) {
+            // Particle logic for confetti/effect
+            for (let i = 0; i < 10; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                document.body.appendChild(particle);
+                setTimeout(() => {
+                    particle.remove();
+                }, 2000);
+            }
+        }
+
+        function spinBottle() {
+            if (isSpinning) return;
+            isSpinning = true;
+            const bottle = document.getElementById('bottle');
+            const spinBtn = document.getElementById('spinBtn');
+            const resultContainer = document.getElementById('resultContainer');
+            
+            spinBtn.disabled = true;
+            spinBtn.textContent = '🌪️ SPINNING... 🌪️';
+            resultContainer.classList.remove('show');
+
+            // Get center of game-area for particles
+            const gameArea = document.getElementById('gameArea'); 
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            const centerX = gameAreaRect.left + gameAreaRect.width / 2;
+            const centerY = gameAreaRect.top + gameAreaRect.height / 2;
+            createParticles(centerX, centerY); 
+            
+            // Get current rotation for continuous spinning
+            const currentTransform = window.getComputedStyle(bottle).getPropertyValue('transform');
+            const matrix = currentTransform.match(/matrix.*\((.+)\)/);
+            let currentRotation = 0;
+            if (matrix) {
+                const values = matrix[1].split(', ');
+                const a = values[0];
+                const b = values[1];
+                currentRotation = Math.atan2(b, a) * (180/Math.PI);
+                if (currentRotation < 0) currentRotation += 360; 
+            }
+
+            // Generate a large rotation for a convincing spin
+            const baseRotations = 5; 
+            const randomExtra = Math.random() * 360; 
+            const totalRotation = currentRotation + (baseRotations * 360) + randomExtra; 
+            
+            // This transform, combined with the CSS transform-origin, ensures the perfect center spin.
+            bottle.style.transform = `translate(-50%, -50%) rotate(${totalRotation}deg)`;
+
+            setTimeout(() => {
+                let resultType;
+                if (currentMode === 'both') {
+                    resultType = Math.random() < 0.5 ? 'truth' : 'dare';
+                } else if (currentMode === 'truth') {
+                    resultType = 'truth';
+                } else {
+                    resultType = 'dare';
+                }
+                const questions = resultType === 'truth' ? truthQuestions : dareQuestions;
+                const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+                
+                document.getElementById('resultType').textContent = resultType.toUpperCase();
+                document.getElementById('resultType').className = `result-type ${resultType}`;
+                document.getElementById('resultText').textContent = randomQuestion;
+                
+                resultContainer.classList.add('show');
+                isSpinning = false;
+                spinBtn.disabled = false;
+                spinBtn.textContent = '🌟 SPIN AGAIN 🌟';
+                
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(200);
+                }
+            }, 4000); 
+        }
+        
+        document.getElementById('spinBtn').addEventListener('click', spinBottle);
+        document.getElementById('bottleContainer').addEventListener('click', spinBottle);
+        
+        document.getElementById('bottleContainer').addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+        document.getElementById('bottleContainer').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const container = e.currentTarget;
+            container.style.transform = 'scale(0.95)';
+        });
+        document.getElementById('bottleContainer').addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const container = e.currentTarget;
+            container.style.transform = 'scale(1)';
+        });
+
+        setMode('both'); 
+    </script>
+</body>
+</html>
